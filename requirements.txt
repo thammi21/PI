@@ -1,0 +1,9 @@
+langchain
+langchain-google-genai
+langchain-community
+pydantic
+fpdf
+jinja2
+pypdf
+sqlalchemy
+python-dotenv
