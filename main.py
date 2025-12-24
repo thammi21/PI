@@ -5,8 +5,7 @@ import json
 from dotenv import load_dotenv
 
 # Import components
-from src.loader import load_invoice_pdf
-from src.extractor import extract_invoice_data
+from src.extractor_azure import extract_invoice_data_llm
 from src.crm_tool import fetch_crm_data
 from src.comparator import compare_invoice_data
 from src.generator import generate_verified_invoice
@@ -31,18 +30,11 @@ def main(pdf_path: str):
 
     logger.info("=== Starting Invoice Processing Pipeline ===")
 
-    # Step 1: Load Invoice
-    logger.info("Step 1: Loading Invoice PDF...")
+    # Step 1: Extract Data (LLM handles loading and parsing)
+    # Step 1: Extract Data (Azure Doc Intelligence)
+    logger.info("Step 1: Extracting Structured Data using Azure Document Intelligence...")
     try:
-        invoice_text = load_invoice_pdf(pdf_path)
-    except Exception as e:
-        logger.error(f"Failed to load PDF: {e}")
-        return
-
-    # Step 2: Extract Data
-    logger.info("Step 2: Extracting Structured Data...")
-    try:
-        extracted_data = extract_invoice_data(invoice_text)
+        extracted_data = extract_invoice_data_llm(pdf_path)
         logger.info(f"Extracted Data: {extracted_data.model_dump_json(indent=2)}")
     except Exception as e:
         logger.error(f"Failed to extract data: {e}")
@@ -50,13 +42,18 @@ def main(pdf_path: str):
 
     # Step 3: Fetch CRM Data
     logger.info("Step 3: Fetching CRM Data...")
-    crm_data = fetch_crm_data(extracted_data.invoice_number)
+    # Use flexible matching with available fields
+    crm_data = fetch_crm_data(
+        job_reference=extracted_data.job_no,
+        invoice_number=extracted_data.supplier_inv_no
+    )
+    
     if not crm_data:
-        logger.warning("Invoice not found in CRM. Stopping pipeline.")
+        logger.warning(f"No matching CRM data found for extracted info.")
         print(json.dumps({
             "status": "MISMATCH",
-            "analysis": "Invoice number not found in CRM.",
-            "differences": {"invoice_number": "Not Found"}
+            "analysis": "No matching CRM record found.",
+            "differences": {"job_reference": "Not Found"}
         }, indent=2))
         return
     logger.info(f"CRM Data: {json.dumps(crm_data, indent=2, default=str)}")

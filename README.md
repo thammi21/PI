@@ -1,57 +1,94 @@
-# AI Invoice Processing Pipeline
+# Intelligent Invoice Analysis & Matching Service
 
-This project implements an end-to-end invoice processing pipeline using LangChain, Google Gemini, and Python. It features AI-based reasoning for data comparison (no fuzzy matching) and generates verified invoices upon successful matching.
+This service acts as an intelligent automation layer for finance teams, seamlessly bridging the gap between external Agent Invoices (PDFs) and internal financial records (CRM Database). It utilizes advanced AI (Azure Document Intelligence , Custom neural model trained on azure & Google Gemini) to extract, validate, and reconcile invoice data.
 
-## Features
+## 🚀 Key Features
 
-1.  **PDF Loading**: Extracts text from PDF invoices.
-2.  **Structured Extraction**: Uses LLMs to extract structured data (Pydantic models).
-3.  **CRM Lookup**: Fetches reference data from a SQL database.
-4.  **AI Comparison**: Performs deep semantic comparison using an LLM chain.
-5.  **Verified Output**: Generates a new PDF if the data matches.
+*   **Document Intelligence**: Utilizes **Azure Document Intelligence** to accurately extract structured data (Supplier, Invoice No, Line Items, etc.) from PDF invoices.
+*   **Hybrid Matching Capability**:
+    *   **Fuzzy Logic**: Pre-calculates similarity scores for line item descriptions to handle matching nomenclature.
+    *   **LLM Reasoning**: Uses **Google Gemini 2.0 Flash** to perform semantic analysis and making final "MATCH/MISMATCH" decisions based on context, currency, dates, and amounts.
+*   **Automated Verification**: Generates a "Verified Invoice" PDF automatically upon a successful match.
+*   **Detailed Logging**: Maintains a comprehensive log of the entire pipeline for audit trails and debugging.
 
-## Setup
+## 🛠️ Technology Stack
 
-1.  **Install Dependencies**:
+*   **Language**: Python 3.10+
+*   **AI/ML**:
+    *   **Extraction**: Azure Document Intelligence
+    *   **Reasoning**: LangChain + Google Gemini (gemini-2.0-flash)
+*   **Database**: SQLite (via SQLAlchemy)
+*   **Utilities**: `pydantic` (Data Validation), `thefuzz` (Fuzzy Matching), `reportlab` (PDF Generation)
+
+## ⚙️ Setup & Installation
+
+1.  **Clone the Repository** (if applicable):
+    ```bash
+    git clone <repository-url>
+    cd invoice-matcher-service/PI
+    ```
+
+2.  **Install Dependencies**:
     ```bash
     pip install -r requirements.txt
     ```
 
-2.  **Environment Variables**:
-    Create a `.env` file in the root directory and add your Google API key:
-    ```
-    GOOGLE_API_KEY=AIza...
+3.  **Environment Configuration**:
+    Create a `.env` file in the root directory (`PI/.env`) and add your API keys:
+    ```env
+    # Google Gemini API
+    GOOGLE_API_KEY=your_google_api_key
+
+    # Azure Document Intelligence
+    AZURE_FORM_ENDPOINT=https://<your-resource-name>.cognitiveservices.azure.com/
+    AZURE_FORM_KEY=your_azure_key
     ```
 
-3.  **Initialize Database**:
-    Run the setup script to create the mock CRM database:
+4.  **Initialize Database**:
+    Before running the pipeline, ensure the CRM database is populated.
     ```bash
-    python setup_db.py
+    python scripts/initialize_system.py
     ```
 
-4.  **Create Sample Invoice**:
-    Generate a sample PDF for testing:
-    ```bash
-    python create_sample_pdf.py
-    ```
+## 🏃 Usage
 
-## Usage
-
-Run the main pipeline with the path to your invoice PDF:
+Run the main pipeline by pointing it to a specific invoice PDF.
 
 ```bash
-python main.py data/sample_invoice.pdf
+python main.py "data/sample_invoices/target_invoice.pdf"
 ```
 
-## Output
+### Pipeline Flow
 
-- **Logs**: Check `pipeline.log` for detailed execution logs.
-- **Verified Invoice**: If matched, the new PDF is saved to `output/verified_invoice.pdf`.
-- **Console**: JSON output of the processing result.
+1.  **Extraction**: The system sends the PDF to Azure to extract header fields (Supplier, Date, Total) and line items.
+2.  **CRM Lookup**: It interprets the Job Number and Supplier Invoice Number to fetch the corresponding record from the internal CRM database ('crm.db').
+3.  **AI Comparison**:
+    *   Calculates fuzzy match scores for line items.
+    *   Constructs a prompt for Gemini with Extracted Data, CRM Data, and Fuzzy Scores.
+    *   Gemini returns a structured `ComparisonResult`.
+4.  **Result Handling**:
+    *   **MATCH**: A stamped `verified_invoice.pdf` is generated in the `output/` folder.
+    *   **MISMATCH**: Differences are logged and displayed in the console.
 
-## Project Structure
+## 📂 Project Structure
 
-- `main.py`: Entry point.
-- `src/`: Core logic modules.
-- `data/`: Database and sample files.
-- `output/`: Generated results.
+```
+PI/
+├── data/                    # Data storage (DB, Sample Invoices)
+├── output/                  # Generated Verified Invoices
+├── scripts/                 # Utility scripts (Init DB, Tests)
+├── src/                     # Core Source Code
+│   ├── comparator.py        # Logic for Fuzzy + LLM Matching
+│   ├── crm_tool.py          # Database interaction tools
+│   ├── extractor_azure.py   # Azure extraction logic
+│   ├── generator.py         # PDF generation logic
+│   └── models.py            # Pydantic data models
+├── main.py                  # Application Entry Point
+├── requirements.txt         # Project Dependencies
+└── README.md                # Project Documentation
+```
+
+## 📝 Logging
+
+*   Execution logs are stored in `pipeline.log`.
+*   Check this file for detailed error messages or trace information regarding the extraction and matching process.

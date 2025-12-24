@@ -7,3 +7,10 @@ jinja2
 pypdf
 sqlalchemy
 python-dotenv
+fastapi
+uvicorn
+python-multipart
+thefuzz
+azure-ai-documentintelligence
+azure-core
+reportlab

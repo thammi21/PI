@@ -38,3 +38,5 @@ data/
 output/
 pipeline.log
 *.db
+coords.txt
+tests/
