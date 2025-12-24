@@ -56,3 +56,6 @@ scripts/verify_db_content.py
 scripts/verify_db_update.py
 scripts/verify_extraction.py
 scripts/verify_pdf.py
+
+# Redundant wrapper files
+process_invoices.py
